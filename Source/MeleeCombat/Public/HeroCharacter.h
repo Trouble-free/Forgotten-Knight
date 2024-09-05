@@ -70,6 +70,12 @@ class MELEECOMBAT_API AHeroCharacter : public ACharacter, public IAttacker
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	class UInputAction* ParryAction;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	float WalkStickMagnitude = 0.3f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	float RunStickMagnitude = 0.98f;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Component", meta = (AllowPrivateAccess = "true"))
 	class ULockOnComponent* LockOnComp;
 

@@ -18,6 +18,9 @@ class MELEECOMBAT_API ULockOnComponent : public UActorComponent
 
 	bool bCanSwitch = true;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	float SwitchStickMagnitude = 0.6f;
+
 public:	
 	// Sets default values for this component's properties
 	ULockOnComponent();

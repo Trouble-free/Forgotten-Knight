@@ -26,7 +26,6 @@ void ULockOnComponent::TargetDetectTimer()
 		FRotator NewRotation;
 
 		FVector TargetLoc = TargetActor->GetActorLocation();
-		FVector TargetVec = FVector(TargetLoc.X, TargetLoc.Y, TargetLoc.Z - 100.0f);
 
 		NewRotation = UKismetMathLibrary::FindLookAtRotation(GetOwner()->GetActorLocation(), TargetLoc);
 
@@ -77,7 +76,7 @@ void ULockOnComponent::LockOn()
 		float interval = GetWorld()->GetDeltaSeconds();
 		EngageLock();
 		GetOwner()->GetWorldTimerManager().SetTimer(TargetDetectTimerHandle, this, &ULockOnComponent::TargetDetectTimer, interval, true);
-		GetOwner()->GetWorldTimerManager().SetTimer(BreakLockOnTimerHandle, this, &ULockOnComponent::BreakLockOn, 0.015f, true);
+		GetOwner()->GetWorldTimerManager().SetTimer(BreakLockOnTimerHandle, this, &ULockOnComponent::BreakLockOn, interval, true);
 	}
 	else
 	{
@@ -189,13 +188,13 @@ void ULockOnComponent::SwitchTarget(const float Value)
 {
 	if (bIsLockOnEngaged && bCanSwitch)
 	{
-		if (Value < -0.6f)
+		if (Value < -SwitchStickMagnitude)
 		{
 			SwitchLeft();
 			bCanSwitch = false;
 			GetOwner()->GetWorld()->GetTimerManager().SetTimer(SwitchTimerHandle, this, &ULockOnComponent::EnableSwitching, 0.2f, false);
 		}
-		else if (Value > 0.6f)
+		else if (Value > SwitchStickMagnitude)
 		{
 			SwitchRight();
 			bCanSwitch = false;
