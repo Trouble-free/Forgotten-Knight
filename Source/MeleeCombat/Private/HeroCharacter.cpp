@@ -123,11 +123,11 @@ void AHeroCharacter::Move(const FInputActionValue& Value)
 	float SprintSpeed = 800.f;
 	float speed = 0;
 #endif
-	if (length < 0.3f)
+	if (length < WalkStickMagnitude)
 	{
 		speed = 0;
 	}
-	else if (length < 0.98f)
+	else if (length < RunStickMagnitude)
 	{
 		speed = WalkSpeed;
 	}
@@ -161,7 +161,7 @@ void AHeroCharacter::Move(const FInputActionValue& Value)
 
 		if (CurrentState == EState::ES_Damaged || CurrentState == EState::ES_Parry) { return; }
 
-		if (length >= 0.3f)
+		if (length >= WalkStickMagnitude)
 		{
 			MoveDirection.Normalize();
 			AddMovementInput(MoveDirection, 1.0f);
