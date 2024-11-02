@@ -47,6 +47,19 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound")
 	USoundBase* BlockSound;
 
+	//Hit Stop
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hit Stop")
+	float DilationRate = 0.01f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hit Stop")
+	float DilationTime = 0.001f;
+
+	FTimerHandle DilationTimerHandle;
+
+	void HitStopEnd();
+
+	void SetHitStop(float duration);
+
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
