@@ -9,6 +9,7 @@
 #include "HeroCharacter.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Camera/CameraComponent.h"
+#include "Boss.h"
 
 // Sets default values for this component's properties
 ULockOnComponent::ULockOnComponent()
@@ -28,6 +29,11 @@ void ULockOnComponent::TargetDetectTimer()
 		FVector TargetLoc = TargetActor->GetActorLocation();
 
 		NewRotation = UKismetMathLibrary::FindLookAtRotation(GetOwner()->GetActorLocation(), TargetLoc);
+
+		if (bChangeLookAtPitch)
+		{
+			NewRotation.Pitch += LookAtOffsetPitch;
+		}
 
 		if (PlayerController)
 		{
@@ -138,6 +144,14 @@ void ULockOnComponent::EngageLock()
 				}
 				if (TargetActor)
 				{
+					if (ABoss* const Boss = Cast<ABoss>(TargetActor))
+					{
+						bChangeLookAtPitch = true;
+					}
+					else
+					{
+						bChangeLookAtPitch = false;
+					}
 					bIsLockOnEngaged = true;
 					if (PlayerController)
 					{

@@ -55,6 +55,12 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Targeting")
 	AActor* PotentialTarget;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Targeting")
+	float LookAtOffsetPitch = -20.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Targeting")
+	bool bChangeLookAtPitch = false;
+
 	void TargetDetectTimer();
 	void BreakLockOn();
 	void EnableSwitching();

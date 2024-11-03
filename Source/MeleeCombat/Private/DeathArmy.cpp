@@ -24,18 +24,6 @@ ADeathArmy::ADeathArmy()
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
-	static ConstructorHelpers::FClassFinder<AController> AIControllerBPClass(TEXT("/Game/Enemy/Blueprints/DeathArmy_AIController_BP.DeathArmy_AIController_BP"));
-	if (AIControllerBPClass.Succeeded())
-	{
-		UE_LOG(LogTemp, Warning, TEXT("AI Controller Found"));
-		AIControllerClass = AIControllerBPClass.Class;
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("AI Controller Not Found"));
-	}
-
-	//AIControllerClass = ADeathArmy_AIController::StaticClass();
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 
 	LockOnWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("LockOnWidget"));
