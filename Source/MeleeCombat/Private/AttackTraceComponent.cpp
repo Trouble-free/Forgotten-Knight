@@ -8,6 +8,7 @@
 #include "HeroCharacter.h"
 #include "DeathArmy.h"
 #include "ComboSystem.h"
+#include "Boss.h"
 
 // Sets default values for this component's properties
 UAttackTraceComponent::UAttackTraceComponent()
@@ -21,6 +22,19 @@ UAttackTraceComponent::UAttackTraceComponent()
 	// ...
 }
 
+
+void UAttackTraceComponent::HitStopEnd()
+{
+	UGameplayStatics::SetGlobalTimeDilation(this, 1.f);
+	GetOwner()->GetWorldTimerManager().ClearTimer(DilationTimerHandle);
+}
+
+void UAttackTraceComponent::SetHitStop(float duration)
+{
+	UGameplayStatics::SetGlobalTimeDilation(this, DilationRate);
+	GetOwner()->GetWorld()->GetTimerManager().SetTimer(DilationTimerHandle, this,
+		&UAttackTraceComponent::HitStopEnd, duration, false);
+}
 
 // Called when the game starts
 void UAttackTraceComponent::BeginPlay()
@@ -89,6 +103,34 @@ void UAttackTraceComponent::TickComponent(float DeltaTime, ELevelTick TickType, 
 					Damage *= PlayerRef->GetComboSystem()->DamageRate;
 				}
 
+				// Hit Stop
+				if (ADeathArmy* const Enemy = Cast<ADeathArmy>(OutActor))
+				{
+					if (Enemy->Health <= Damage)
+					{
+						SetHitStop(DilationTime * 10);
+					}
+					else
+					{
+						SetHitStop(DilationTime);
+					}
+				}
+				else if (ABoss* const Boss = Cast<ABoss>(OutActor))
+				{
+					if (Boss->Health <= Damage)
+					{
+						SetHitStop(DilationTime * 20);
+					}
+					else
+					{
+						SetHitStop(DilationTime);
+					}
+				}
+				else
+				{
+					SetHitStop(DilationTime);
+				}
+				
 				// Play sound and particle effect
 				FRotator ParticleRot = FRotationMatrix::MakeFromZ(OutHit.Normal).Rotator();
 				if (AHeroCharacter* const HeroRef = Cast<AHeroCharacter>(OutActor))
