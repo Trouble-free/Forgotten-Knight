@@ -122,20 +122,47 @@ void AHeroCharacter::Move(const FInputActionValue& Value)
 	float RunSpeed = 500.f;
 	float SprintSpeed = 800.f;
 	float speed = 0;
+	//float ElapsedTime = 0;
 #endif
 	if (length < WalkStickMagnitude)
 	{
+		ElapsedTime = 0;
 		speed = 0;
 	}
-	else if (length < RunStickMagnitude)
+	else if (length < RunStickMagnitude || bIsWalking)
 	{
-		speed = WalkSpeed;
+		if (speed < WalkSpeed)
+		{
+			ElapsedTime += GetWorld()->GetDeltaSeconds();
+
+		}
+		else
+		{
+			ElapsedTime = 0;
+		}
+		speed = FMath::Min(WalkSpeed, speed + WalkAcceleration * ElapsedTime);
 	}
 	else
 	{
-		speed = bIsWalking ? WalkSpeed : RunSpeed;
+		float MaxSpeed = RunSpeed;
+		if (CurrentState == EState::ES_Sprint)
+		{
+			MaxSpeed = SprintSpeed;
+		}
+		if (speed < MaxSpeed)
+		{
+			ElapsedTime += GetWorld()->GetDeltaSeconds();
+
+		}
+		else
+		{
+			ElapsedTime = 0;
+		}
+		speed = FMath::Min(MaxSpeed, speed + RunAcceleration * ElapsedTime);
+		//speed = bIsWalking ? WalkSpeed : RunSpeed;
 	}
-	speed = (CurrentState == EState::ES_Sprint) ? SprintSpeed : speed;
+	//speed = (CurrentState == EState::ES_Sprint) ? SprintSpeed : speed;
+
 	GetCharacterMovement()->MaxWalkSpeed = speed;
 
 	//UE_LOG(LogTemp, Warning, TEXT("MovementVector: %s, Length: %f, Speed: %f"), *MovementVector.ToString(), length, speed);
