@@ -26,6 +26,10 @@ class MELEECOMBAT_API AHeroCharacter : public ACharacter, public IAttacker
 
 	float ElapsedTime = 0;
 
+	float SlowDownTime = 0;
+
+	bool bStopMoving;
+
 	/** MappingContext */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	class UInputMappingContext* DefaultMappingContext;
@@ -78,11 +82,14 @@ class MELEECOMBAT_API AHeroCharacter : public ACharacter, public IAttacker
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	float RunStickMagnitude = 0.98f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
 	float WalkAcceleration = 300.f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
 	float RunAcceleration = 600.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
+	float SlowDownRate = 10.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Component", meta = (AllowPrivateAccess = "true"))
 	class ULockOnComponent* LockOnComp;
@@ -199,6 +206,10 @@ protected:
 
 	/** Called for movement input */
 	void Move(const FInputActionValue& Value);
+
+	void StopMove();
+
+	void OnStopMove();
 
 	/** Called for looking input */
 	void Look(const FInputActionValue& Value);

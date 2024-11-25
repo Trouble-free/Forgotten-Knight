@@ -106,6 +106,11 @@ void AHeroCharacter::OnJump()
 
 void AHeroCharacter::Move(const FInputActionValue& Value)
 {
+	if (bStopMoving)
+	{
+		bStopMoving = false;
+		ElapsedTime = 0;
+	}
 	if (bIsDead) { return; }
 
 	if (bRolling)
@@ -123,14 +128,27 @@ void AHeroCharacter::Move(const FInputActionValue& Value)
 	float SprintSpeed = 800.f;
 	float speed = 0;
 	//float ElapsedTime = 0;
+	FVector Velocity = GetCharacterMovement()->GetLastUpdateVelocity();
+	FVector LateralSpeed = FVector(Velocity.X, Velocity.Y, 0);
+	float MovementSpeed = LateralSpeed.Size();
 #endif
 	if (length < WalkStickMagnitude)
-	{
+	{	
+		if (MovementSpeed > 100.f)
+		{
+			bStopMoving = true;
+			return;
+		}
 		ElapsedTime = 0;
 		speed = 0;
 	}
 	else if (length < RunStickMagnitude || bIsWalking)
 	{
+		if (MovementSpeed > WalkSpeed + 100.f)
+		{
+			bStopMoving = true;
+			return;
+		}
 		if (speed < WalkSpeed)
 		{
 			ElapsedTime += GetWorld()->GetDeltaSeconds();
@@ -184,7 +202,7 @@ void AHeroCharacter::Move(const FInputActionValue& Value)
 		//AddMovementInput(RightDirection, MovementVector.X);
 
 		FVector MoveDirection = ForwardDirection * MovementVector.Y + RightDirection * MovementVector.X;
-		LastInputDirection = MoveDirection;
+		LastInputDirection = MoveDirection.GetSafeNormal();
 
 		if (CurrentState == EState::ES_Damaged || CurrentState == EState::ES_Parry) { return; }
 
@@ -200,6 +218,46 @@ void AHeroCharacter::Move(const FInputActionValue& Value)
 		}
 		
 	}
+}
+
+void AHeroCharacter::StopMove()
+{
+	if (!GetCharacterMovement()->IsMovingOnGround()) { return; }
+
+	float speed = GetCharacterMovement()->MaxWalkSpeed;
+	float WalkSpeed = 230.f;
+
+	if (speed > WalkSpeed)
+	{
+		//SlowDownTime += GetWorld()->GetDeltaSeconds();
+		speed = FMath::Max(WalkSpeed, speed - SlowDownRate * 2);
+	}
+	else if (speed > 1.0f)
+	{
+		speed = FMath::Max(0.0f, speed - SlowDownRate / 2);
+	}
+	GetCharacterMovement()->MaxWalkSpeed = speed;
+	if (speed <= 0.0f)
+	{
+		ElapsedTime = 0;
+		GetCharacterMovement()->StopMovementImmediately();
+	}
+	else
+	{
+		AddMovementInput(LastInputDirection, 1.0f);
+		GetCharacterMovement()->Velocity = LastInputDirection * speed;
+	}
+	if (speed < 1.0f)
+	{
+		ElapsedTime = 0;
+		bStopMoving = false;
+	}
+	
+}
+
+void AHeroCharacter::OnStopMove()
+{
+	bStopMoving = true;
 }
 
 void AHeroCharacter::Look(const FInputActionValue& Value)
@@ -573,6 +631,7 @@ void AHeroCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 
 		//Moving
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AHeroCharacter::Move);
+		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Completed, this, &AHeroCharacter::OnStopMove);
 
 		//Looking
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AHeroCharacter::Look);
@@ -664,6 +723,12 @@ void AHeroCharacter::Tick(float DeltaTime)
 	default:
 		break;
 	}
+
+	if (bStopMoving)
+	{
+		StopMove();
+	}
+
 }
 
 void AHeroCharacter::TurnAttackTraceOn()
