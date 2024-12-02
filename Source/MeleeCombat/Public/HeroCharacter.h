@@ -30,6 +30,8 @@ class MELEECOMBAT_API AHeroCharacter : public ACharacter, public IAttacker
 
 	bool bStopMoving;
 
+	float StaminaBarInsideWait = 0;
+
 	/** MappingContext */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	class UInputMappingContext* DefaultMappingContext;
@@ -168,6 +170,15 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attribute")
 	float MaxStamina;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Attribute")
+	float StaminaBarInside;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Attribute")
+	float StaminaBarInsidePercent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Attribute")
+	float LastStaminaBarInsidePercent;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attribute")
 	float StaminaRecoverRate;

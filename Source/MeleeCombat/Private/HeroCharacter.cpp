@@ -78,6 +78,7 @@ AHeroCharacter::AHeroCharacter()
 	MaxHealth = 100.f;
 	Stamina = 100.f;
 	MaxStamina = 100.f;
+	StaminaBarInside = 100.f;
 	StaminaRecoverRate = 30.f;
 	StaminaCostRate = 20.f;
 	AttackCostRate = 10.f;
@@ -615,6 +616,8 @@ void AHeroCharacter::BeginPlay()
 	{
 		BossRef->OnBossDied.AddUObject(this, &AHeroCharacter::DefeatedBoss);
 	}
+
+	StaminaBarInsidePercent = StaminaBarInside / MaxStamina;
 	
 }
 
@@ -697,6 +700,7 @@ void AHeroCharacter::Tick(float DeltaTime)
 		{
 			Stamina = MaxStamina;
 		}
+		StaminaBarInside = Stamina;
 		break;
 	case EState::ES_Sprint:
 		Tmp = Stamina - CostRate;
@@ -723,6 +727,53 @@ void AHeroCharacter::Tick(float DeltaTime)
 	default:
 		break;
 	}
+
+	// StaminaBarInside chasing Stamina
+	if (FMath::Abs(StaminaBarInside - Stamina) > 0.01f)
+	{
+		float WaitTime = 1.0f;
+		if (CurrentState == EState::ES_Sprint)
+		{
+			WaitTime = 0;
+		}
+		if (StaminaBarInsideWait <= WaitTime)
+		{
+			StaminaBarInsideWait += DeltaTime;
+		}
+		else
+		{
+			if (StaminaBarInside > Stamina)
+			{
+				Tmp = StaminaBarInside - CostRate;
+				if (Tmp > Stamina)
+				{
+					StaminaBarInside = Tmp;
+				}
+				else
+				{
+					StaminaBarInside = Stamina;
+				}
+			}
+			else
+			{
+				Tmp = StaminaBarInside + CostRate;
+				if (Tmp < Stamina)
+				{
+					StaminaBarInside = Tmp;
+				}
+				else
+				{
+					StaminaBarInside = Stamina;
+				}
+			}
+		}
+		
+	}
+	else
+	{
+		StaminaBarInsideWait = 0;
+	}
+	StaminaBarInsidePercent = StaminaBarInside / MaxStamina;
 
 	if (bStopMoving)
 	{
