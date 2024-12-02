@@ -76,6 +76,7 @@ AHeroCharacter::AHeroCharacter()
 	CurrentState = EState::ES_Normal;
 	Health = 100.f;
 	MaxHealth = 100.f;
+	HealthBarInside = 100.f;
 	Stamina = 100.f;
 	MaxStamina = 100.f;
 	StaminaBarInside = 100.f;
@@ -617,6 +618,7 @@ void AHeroCharacter::BeginPlay()
 		BossRef->OnBossDied.AddUObject(this, &AHeroCharacter::DefeatedBoss);
 	}
 
+	HealthBarInsidePercent = HealthBarInside / MaxHealth;
 	StaminaBarInsidePercent = StaminaBarInside / MaxStamina;
 	
 }
@@ -729,12 +731,17 @@ void AHeroCharacter::Tick(float DeltaTime)
 	}
 
 	// StaminaBarInside chasing Stamina
-	if (FMath::Abs(StaminaBarInside - Stamina) > 0.01f)
+	const float deviation = 0.01f;
+	if (StaminaBarInside > Stamina + deviation)
 	{
 		float WaitTime = 1.0f;
 		if (CurrentState == EState::ES_Sprint)
 		{
 			WaitTime = 0;
+		}
+		if (CurrentState == EState::ES_Dodge)
+		{
+			WaitTime = 0.2f;
 		}
 		if (StaminaBarInsideWait <= WaitTime)
 		{
@@ -742,29 +749,14 @@ void AHeroCharacter::Tick(float DeltaTime)
 		}
 		else
 		{
-			if (StaminaBarInside > Stamina)
+			Tmp = StaminaBarInside - CostRate;
+			if (Tmp > Stamina)
 			{
-				Tmp = StaminaBarInside - CostRate;
-				if (Tmp > Stamina)
-				{
-					StaminaBarInside = Tmp;
-				}
-				else
-				{
-					StaminaBarInside = Stamina;
-				}
+				StaminaBarInside = Tmp;
 			}
 			else
 			{
-				Tmp = StaminaBarInside + CostRate;
-				if (Tmp < Stamina)
-				{
-					StaminaBarInside = Tmp;
-				}
-				else
-				{
-					StaminaBarInside = Stamina;
-				}
+				StaminaBarInside = Stamina;
 			}
 		}
 		
@@ -773,7 +765,46 @@ void AHeroCharacter::Tick(float DeltaTime)
 	{
 		StaminaBarInsideWait = 0;
 	}
+
+	if (StaminaBarInside < Stamina - deviation)
+	{
+		StaminaBarInside = Stamina;
+	}
+
 	StaminaBarInsidePercent = StaminaBarInside / MaxStamina;
+
+	if (HealthBarInside > Health + deviation)
+	{
+		float WaitTime = 1.0f;
+		if (HealthBarInsideWait <= WaitTime)
+		{
+			HealthBarInsideWait += DeltaTime;
+		}
+		else
+		{
+			Tmp = HealthBarInside - CostRate * 2;
+			if (Tmp > Health)
+			{
+				HealthBarInside = Tmp;
+			}
+			else
+			{
+				HealthBarInside = Health;
+			}
+		}
+
+	}
+	else
+	{
+		HealthBarInsideWait = 0;
+	}
+
+	if (HealthBarInside < Health - deviation)
+	{
+		HealthBarInside = Health;
+	}
+
+	HealthBarInsidePercent = HealthBarInside / MaxHealth;
 
 	if (bStopMoving)
 	{
