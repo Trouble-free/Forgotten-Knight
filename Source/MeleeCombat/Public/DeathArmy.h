@@ -24,6 +24,10 @@ class MELEECOMBAT_API ADeathArmy : public ACharacter, public ILockOnInterface, p
 {
 	GENERATED_BODY()
 
+	float HealthBarInsideWait = 0;
+
+	class UHealthBarWidget* HealthBar;
+
 	class AHeroCharacter* PlayerRef;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI", meta = (AllowPrivateAccess = "true"))
@@ -50,6 +54,12 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attribute")
 	float MaxHealth;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Attribute")
+	float HealthBarInside;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attribute")
+	float HealthBarChangeRate;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attribute")
 	bool bIsDead;

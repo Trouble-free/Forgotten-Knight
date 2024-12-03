@@ -41,6 +41,8 @@ ADeathArmy::ADeathArmy()
 
 	Health = 50.f;
 	MaxHealth = 50.f;
+	HealthBarInside = MaxHealth;
+	HealthBarChangeRate = 50.f;
 	bIsDead = false;
 	bIsAttacking = false;
 	bTakingDamage = false;
@@ -84,7 +86,6 @@ float ADeathArmy::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent
 		// Update HealthBar
 		float HealthPercent = Health / MaxHealth;
 		HealthBarWidgetComp->bHiddenInGame = false;
-		UHealthBarWidget* HealthBar = Cast<UHealthBarWidget>(HealthBarWidgetComp->GetUserWidgetObject());
 		if (HealthBar)
 		{
 			HealthBar->SetHealthPercent(HealthPercent);
@@ -235,7 +236,6 @@ void ADeathArmy::Stabbed(float DamageAmount)
 		// Update HealthBar
 		float HealthPercent = Health / MaxHealth;
 		HealthBarWidgetComp->bHiddenInGame = false;
-		UHealthBarWidget* HealthBar = Cast<UHealthBarWidget>(HealthBarWidgetComp->GetUserWidgetObject());
 		if (HealthBar)
 		{
 			HealthBar->SetHealthPercent(HealthPercent);
@@ -305,7 +305,6 @@ void ADeathArmy::Executed(float DamageAmount)
 		// Update HealthBar
 		float HealthPercent = Health / MaxHealth;
 		HealthBarWidgetComp->bHiddenInGame = false;
-		UHealthBarWidget* HealthBar = Cast<UHealthBarWidget>(HealthBarWidgetComp->GetUserWidgetObject());
 		if (HealthBar)
 		{
 			HealthBar->SetHealthPercent(HealthPercent);
@@ -391,10 +390,12 @@ void ADeathArmy::BeginPlay()
 
 	// Initial Health Bar
 	float HealthPercent = Health / MaxHealth;
-	UHealthBarWidget* HealthBar = Cast<UHealthBarWidget>(HealthBarWidgetComp->GetUserWidgetObject());
+	float InsidePercenet = HealthBarInside / MaxHealth;
+	HealthBar = Cast<UHealthBarWidget>(HealthBarWidgetComp->GetUserWidgetObject());
 	if (HealthBar)
 	{
 		HealthBar->SetHealthPercent(HealthPercent);
+		HealthBar->SetInsidePercent(InsidePercenet);
 	}
 
 #if 0
@@ -476,6 +477,42 @@ void ADeathArmy::ResetCollision()
 void ADeathArmy::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	// HealthBarInside chasing Health
+	float ChaseRate = HealthBarChangeRate * DeltaTime;
+	float Tmp = 0;
+	const float deviation = 0.01f;
+	if (HealthBarInside > Health + deviation)
+	{
+		float WaitTime = 1.0f;
+		if (HealthBarInsideWait <= WaitTime)
+		{
+			HealthBarInsideWait += DeltaTime;
+		}
+		else
+		{
+			Tmp = HealthBarInside - ChaseRate;
+			if (Tmp > Health)
+			{
+				HealthBarInside = Tmp;
+			}
+			else
+			{
+				HealthBarInside = Health;
+			}
+		}
+
+	}
+	else
+	{
+		HealthBarInsideWait = 0;
+	}
+
+	float InsidePercenet = HealthBarInside / MaxHealth;
+	if (HealthBar)
+	{
+		HealthBar->SetInsidePercent(InsidePercenet);
+	}
 
 }
 
