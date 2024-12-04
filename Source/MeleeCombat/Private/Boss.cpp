@@ -468,6 +468,7 @@ void ABoss::Stabbed(float DamageAmount)
 
 void ABoss::Executed(float DamageAmount)
 {
+	bIsBeingParried = false;
 	float Tmp = Health - DamageAmount;
 	if (Tmp > 0)
 	{

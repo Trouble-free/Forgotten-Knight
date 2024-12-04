@@ -340,6 +340,10 @@ void AHeroCharacter::Sprint()
 {
 	if (CurrentState != EState::ES_Normal) { return; }
 
+	FVector Velocity = GetCharacterMovement()->Velocity;
+	float Speed = Velocity.Size();
+	if (Speed < 1.0f) { return; }
+
 	if (!bIsExhausted) 
 	{
 		CurrentState = EState::ES_Sprint;
@@ -705,18 +709,21 @@ void AHeroCharacter::Tick(float DeltaTime)
 		StaminaBarInside = Stamina;
 		break;
 	case EState::ES_Sprint:
-		Tmp = Stamina - CostRate;
-		if (Tmp > 0)
+		if (GetCharacterMovement()->MaxWalkSpeed > 500.f)
 		{
-			Stamina = Tmp;
-		}
-		else
-		{
-			Stamina = 0;
-			bIsExhausted = true;
-			StopSprint();
-			SetState(EState::ES_Normal);
-		}
+			Tmp = Stamina - CostRate;
+			if (Tmp > 0)
+			{
+				Stamina = Tmp;
+			}
+			else
+			{
+				Stamina = 0;
+				bIsExhausted = true;
+				StopSprint();
+				SetState(EState::ES_Normal);
+			}
+		}	
 		break;
 	case EState::ES_Attack:
 		break;
@@ -742,6 +749,10 @@ void AHeroCharacter::Tick(float DeltaTime)
 		if (CurrentState == EState::ES_Dodge)
 		{
 			WaitTime = 0.2f;
+		}
+		if (CurrentState == EState::ES_Damaged)
+		{
+			WaitTime = 0.1f;
 		}
 		if (StaminaBarInsideWait <= WaitTime)
 		{

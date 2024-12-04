@@ -57,6 +57,12 @@ ADeathArmy::ADeathArmy()
 void ADeathArmy::OnSelected()
 {
 	LockOnWidget->bHiddenInGame = false;
+	HealthBarWidgetComp->bHiddenInGame = false;
+	if (GetWorldTimerManager().IsTimerActive(HealthBarVisionHandle))
+	{
+		GetWorldTimerManager().ClearTimer(HealthBarVisionHandle);
+	}
+	GetWorldTimerManager().SetTimer(HealthBarVisionHandle, this, &ADeathArmy::HideBar, DamagedBarHiddenWait, false);
 }
 
 void ADeathArmy::OnDeselected()
@@ -71,27 +77,25 @@ bool ADeathArmy::IsDead() const
 
 float ADeathArmy::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
+	HealthBarWidgetComp->bHiddenInGame = false;
 	float Tmp = Health - DamageAmount;
 	if (Tmp > 0)
 	{
 		if (GetWorldTimerManager().IsTimerActive(HealthBarVisionHandle))
 		{
 			GetWorldTimerManager().ClearTimer(HealthBarVisionHandle);
-		}
-		
-		GetWorldTimerManager().SetTimer(HealthBarVisionHandle, this, &ADeathArmy::HideBar, 5.f, false);
+		}		
+		GetWorldTimerManager().SetTimer(HealthBarVisionHandle, this, &ADeathArmy::HideBar, DamagedBarHiddenWait, false);
 		bTakingDamage = true;
 		Health = Tmp;
 
 		// Update HealthBar
-		float HealthPercent = Health / MaxHealth;
-		HealthBarWidgetComp->bHiddenInGame = false;
+		float HealthPercent = Health / MaxHealth;		
 		if (HealthBar)
 		{
 			HealthBar->SetHealthPercent(HealthPercent);
 		}
 
-		UpdateHpBar();
 		PlayAnimMontage(HitAnimMontage);
 		GetCharacterMovement()->StopMovementImmediately();
 		AController* EnemyController = GetController();
@@ -107,8 +111,18 @@ float ADeathArmy::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent
 	}
 	else
 	{
-		HealthBarWidgetComp->bHiddenInGame = true;
 		Health = 0;
+		// Update HealthBar
+		float HealthPercent = Health / MaxHealth;
+		if (HealthBar)
+		{
+			HealthBar->SetHealthPercent(HealthPercent);
+		}
+		if (GetWorldTimerManager().IsTimerActive(HealthBarVisionHandle))
+		{
+			GetWorldTimerManager().ClearTimer(HealthBarVisionHandle);
+		}
+		GetWorldTimerManager().SetTimer(HealthBarVisionHandle, this, &ADeathArmy::HideBar, DeadBarHiddenWait, false);
 		bIsDead = true;
 		GetCapsuleComponent()->SetCollisionProfileName(TEXT("NoCollision"));
 		GetMesh()->SetCollisionProfileName(TEXT("NoCollision"));
@@ -221,6 +235,7 @@ void ADeathArmy::HideBar()
 
 void ADeathArmy::Stabbed(float DamageAmount)
 {
+	HealthBarWidgetComp->bHiddenInGame = false;
 	float Tmp = Health - DamageAmount;
 	if (Tmp > 0)
 	{
@@ -229,19 +244,17 @@ void ADeathArmy::Stabbed(float DamageAmount)
 			GetWorldTimerManager().ClearTimer(HealthBarVisionHandle);
 		}
 
-		GetWorldTimerManager().SetTimer(HealthBarVisionHandle, this, &ADeathArmy::HideBar, 5.f, false);
+		GetWorldTimerManager().SetTimer(HealthBarVisionHandle, this, &ADeathArmy::HideBar, DamagedBarHiddenWait, false);
 		bTakingDamage = true;
 		Health = Tmp;
 
 		// Update HealthBar
-		float HealthPercent = Health / MaxHealth;
-		HealthBarWidgetComp->bHiddenInGame = false;
+		float HealthPercent = Health / MaxHealth;	
 		if (HealthBar)
 		{
 			HealthBar->SetHealthPercent(HealthPercent);
 		}
 
-		UpdateHpBar();
 		float PlayTime = PlayAnimMontage(StabbedAnimMontage);
 		GetCapsuleComponent()->SetCollisionProfileName(TEXT("NoCollision"));
 		GetMesh()->SetCollisionProfileName(TEXT("NoCollision"));
@@ -259,9 +272,19 @@ void ADeathArmy::Stabbed(float DamageAmount)
 		}
 	}
 	else
-	{
-		HealthBarWidgetComp->bHiddenInGame = true;
+	{		
 		Health = 0;
+		// Update HealthBar
+		float HealthPercent = Health / MaxHealth;
+		if (HealthBar)
+		{
+			HealthBar->SetHealthPercent(HealthPercent);
+		}
+		if (GetWorldTimerManager().IsTimerActive(HealthBarVisionHandle))
+		{
+			GetWorldTimerManager().ClearTimer(HealthBarVisionHandle);
+		}
+		GetWorldTimerManager().SetTimer(HealthBarVisionHandle, this, &ADeathArmy::HideBar, DeadBarHiddenWait, false);
 		bIsDead = true;
 		GetCapsuleComponent()->SetCollisionProfileName(TEXT("NoCollision"));
 		GetMesh()->SetCollisionProfileName(TEXT("NoCollision"));
@@ -290,6 +313,7 @@ void ADeathArmy::Stabbed(float DamageAmount)
 
 void ADeathArmy::Executed(float DamageAmount)
 {
+	HealthBarWidgetComp->bHiddenInGame = false;
 	float Tmp = Health - DamageAmount;
 	if (Tmp > 0)
 	{
@@ -298,19 +322,17 @@ void ADeathArmy::Executed(float DamageAmount)
 			GetWorldTimerManager().ClearTimer(HealthBarVisionHandle);
 		}
 
-		GetWorldTimerManager().SetTimer(HealthBarVisionHandle, this, &ADeathArmy::HideBar, 5.f, false);
+		GetWorldTimerManager().SetTimer(HealthBarVisionHandle, this, &ADeathArmy::HideBar, DamagedBarHiddenWait, false);
 		bTakingDamage = true;
 		Health = Tmp;
 
 		// Update HealthBar
-		float HealthPercent = Health / MaxHealth;
-		HealthBarWidgetComp->bHiddenInGame = false;
+		float HealthPercent = Health / MaxHealth;	
 		if (HealthBar)
 		{
 			HealthBar->SetHealthPercent(HealthPercent);
 		}
 
-		UpdateHpBar();
 		float PlayTime = PlayAnimMontage(ExecutedAnimMontage);
 		GetCapsuleComponent()->SetCollisionProfileName(TEXT("NoCollision"));
 		GetMesh()->SetCollisionProfileName(TEXT("NoCollision"));
@@ -328,9 +350,19 @@ void ADeathArmy::Executed(float DamageAmount)
 		}
 	}
 	else
-	{
-		HealthBarWidgetComp->bHiddenInGame = true;
+	{	
 		Health = 0;
+		// Update HealthBar
+		float HealthPercent = Health / MaxHealth;
+		if (HealthBar)
+		{
+			HealthBar->SetHealthPercent(HealthPercent);
+		}
+		if (GetWorldTimerManager().IsTimerActive(HealthBarVisionHandle))
+		{
+			GetWorldTimerManager().ClearTimer(HealthBarVisionHandle);
+		}
+		GetWorldTimerManager().SetTimer(HealthBarVisionHandle, this, &ADeathArmy::HideBar, DeadBarHiddenWait, false);
 		bIsDead = true;
 		GetCapsuleComponent()->SetCollisionProfileName(TEXT("NoCollision"));
 		GetMesh()->SetCollisionProfileName(TEXT("NoCollision"));

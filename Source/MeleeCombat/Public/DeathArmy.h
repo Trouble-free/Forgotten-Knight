@@ -26,6 +26,10 @@ class MELEECOMBAT_API ADeathArmy : public ACharacter, public ILockOnInterface, p
 
 	float HealthBarInsideWait = 0;
 
+	float DamagedBarHiddenWait = 5.0f;
+
+	float DeadBarHiddenWait = 3.0f;
+
 	class UHealthBarWidget* HealthBar;
 
 	class AHeroCharacter* PlayerRef;
@@ -168,9 +172,6 @@ protected:
 
 	UFUNCTION(BlueprintCallable)
 	void AttackEnd();
-
-	UFUNCTION(BlueprintImplementableEvent)
-	void UpdateHpBar();
 
 	void StandUp();
 	void SidleStandUp();
