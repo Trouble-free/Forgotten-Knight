@@ -24,6 +24,16 @@ class MELEECOMBAT_API AHeroCharacter : public ACharacter, public IAttacker
 {
 	GENERATED_BODY()
 
+	float ElapsedTime = 0;
+
+	float SlowDownTime = 0;
+
+	bool bStopMoving;
+
+	float StaminaBarInsideWait = 0;
+
+	float HealthBarInsideWait = 0;
+
 	/** MappingContext */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	class UInputMappingContext* DefaultMappingContext;
@@ -75,6 +85,15 @@ class MELEECOMBAT_API AHeroCharacter : public ACharacter, public IAttacker
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	float RunStickMagnitude = 0.98f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
+	float WalkAcceleration = 300.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
+	float RunAcceleration = 600.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
+	float SlowDownRate = 10.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Component", meta = (AllowPrivateAccess = "true"))
 	class ULockOnComponent* LockOnComp;
@@ -148,11 +167,26 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attribute")
 	float MaxHealth;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Attribute")
+	float HealthBarInside;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Attribute")
+	float HealthBarInsidePercent;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attribute")
 	float Stamina;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attribute")
 	float MaxStamina;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Attribute")
+	float StaminaBarInside;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Attribute")
+	float StaminaBarInsidePercent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Attribute")
+	float LastStaminaBarInsidePercent;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attribute")
 	float StaminaRecoverRate;
@@ -191,6 +225,10 @@ protected:
 
 	/** Called for movement input */
 	void Move(const FInputActionValue& Value);
+
+	void StopMove();
+
+	void OnStopMove();
 
 	/** Called for looking input */
 	void Look(const FInputActionValue& Value);

@@ -46,6 +46,8 @@ ABoss::ABoss()
 
 	Health = 300.f;
 	MaxHealth = 300.f;
+	HealthBarInside = 300.f;
+	HealthBarChangeRate = 50.f;
 	bIsDead = false;
 	bIsAttacking = false;
 	bTakingDamage = false;
@@ -115,6 +117,8 @@ void ABoss::BeginPlay()
 	}
 
 	OnBossDied.AddUObject(this, &ABoss::StopPlay);
+
+	HealthBarInsidePercent = HealthBarInside / MaxHealth;
 	
 }
 
@@ -204,6 +208,45 @@ void ABoss::StopPlay()
 void ABoss::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	// HealthBarInside chasing Health
+	float ChaseRate = HealthBarChangeRate * DeltaTime;
+	float Tmp = 0;
+	const float deviation = 0.01f;
+	if (HealthBarInside > Health + deviation)
+	{
+		float WaitTime = 1.0f;
+		if (HealthBarInsideWait <= WaitTime)
+		{
+			HealthBarInsideWait += DeltaTime;
+		}
+		else
+		{
+			Tmp = HealthBarInside - ChaseRate;
+			if (Tmp > Health)
+			{
+				HealthBarInside = Tmp;
+			}
+			else
+			{
+				HealthBarInside = Health;
+			}
+		}
+
+	}
+	else
+	{
+		HealthBarInsideWait = 0;
+	}
+
+#if 0
+	if (HealthBarInside < Health - deviation)
+	{
+		HealthBarInside = Health;
+	}
+#endif
+
+	HealthBarInsidePercent = HealthBarInside / MaxHealth;
 
 }
 
@@ -425,6 +468,7 @@ void ABoss::Stabbed(float DamageAmount)
 
 void ABoss::Executed(float DamageAmount)
 {
+	bIsBeingParried = false;
 	float Tmp = Health - DamageAmount;
 	if (Tmp > 0)
 	{

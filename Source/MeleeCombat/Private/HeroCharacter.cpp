@@ -76,8 +76,10 @@ AHeroCharacter::AHeroCharacter()
 	CurrentState = EState::ES_Normal;
 	Health = 100.f;
 	MaxHealth = 100.f;
+	HealthBarInside = 100.f;
 	Stamina = 100.f;
 	MaxStamina = 100.f;
+	StaminaBarInside = 100.f;
 	StaminaRecoverRate = 30.f;
 	StaminaCostRate = 20.f;
 	AttackCostRate = 10.f;
@@ -106,6 +108,11 @@ void AHeroCharacter::OnJump()
 
 void AHeroCharacter::Move(const FInputActionValue& Value)
 {
+	if (bStopMoving)
+	{
+		bStopMoving = false;
+		ElapsedTime = 0;
+	}
 	if (bIsDead) { return; }
 
 	if (bRolling)
@@ -122,20 +129,60 @@ void AHeroCharacter::Move(const FInputActionValue& Value)
 	float RunSpeed = 500.f;
 	float SprintSpeed = 800.f;
 	float speed = 0;
+	//float ElapsedTime = 0;
+	FVector Velocity = GetCharacterMovement()->GetLastUpdateVelocity();
+	FVector LateralSpeed = FVector(Velocity.X, Velocity.Y, 0);
+	float MovementSpeed = LateralSpeed.Size();
 #endif
 	if (length < WalkStickMagnitude)
-	{
+	{	
+		if (MovementSpeed > 100.f)
+		{
+			bStopMoving = true;
+			return;
+		}
+		ElapsedTime = 0;
 		speed = 0;
 	}
-	else if (length < RunStickMagnitude)
+	else if (length < RunStickMagnitude || bIsWalking)
 	{
-		speed = WalkSpeed;
+		if (MovementSpeed > WalkSpeed + 100.f)
+		{
+			bStopMoving = true;
+			return;
+		}
+		if (speed < WalkSpeed)
+		{
+			ElapsedTime += GetWorld()->GetDeltaSeconds();
+
+		}
+		else
+		{
+			ElapsedTime = 0;
+		}
+		speed = FMath::Min(WalkSpeed, speed + WalkAcceleration * ElapsedTime);
 	}
 	else
 	{
-		speed = bIsWalking ? WalkSpeed : RunSpeed;
+		float MaxSpeed = RunSpeed;
+		if (CurrentState == EState::ES_Sprint)
+		{
+			MaxSpeed = SprintSpeed;
+		}
+		if (speed < MaxSpeed)
+		{
+			ElapsedTime += GetWorld()->GetDeltaSeconds();
+
+		}
+		else
+		{
+			ElapsedTime = 0;
+		}
+		speed = FMath::Min(MaxSpeed, speed + RunAcceleration * ElapsedTime);
+		//speed = bIsWalking ? WalkSpeed : RunSpeed;
 	}
-	speed = (CurrentState == EState::ES_Sprint) ? SprintSpeed : speed;
+	//speed = (CurrentState == EState::ES_Sprint) ? SprintSpeed : speed;
+
 	GetCharacterMovement()->MaxWalkSpeed = speed;
 
 	//UE_LOG(LogTemp, Warning, TEXT("MovementVector: %s, Length: %f, Speed: %f"), *MovementVector.ToString(), length, speed);
@@ -157,7 +204,7 @@ void AHeroCharacter::Move(const FInputActionValue& Value)
 		//AddMovementInput(RightDirection, MovementVector.X);
 
 		FVector MoveDirection = ForwardDirection * MovementVector.Y + RightDirection * MovementVector.X;
-		LastInputDirection = MoveDirection;
+		LastInputDirection = MoveDirection.GetSafeNormal();
 
 		if (CurrentState == EState::ES_Damaged || CurrentState == EState::ES_Parry) { return; }
 
@@ -173,6 +220,46 @@ void AHeroCharacter::Move(const FInputActionValue& Value)
 		}
 		
 	}
+}
+
+void AHeroCharacter::StopMove()
+{
+	if (!GetCharacterMovement()->IsMovingOnGround()) { return; }
+
+	float speed = GetCharacterMovement()->MaxWalkSpeed;
+	float WalkSpeed = 230.f;
+
+	if (speed > WalkSpeed)
+	{
+		//SlowDownTime += GetWorld()->GetDeltaSeconds();
+		speed = FMath::Max(WalkSpeed, speed - SlowDownRate * 2);
+	}
+	else if (speed > 1.0f)
+	{
+		speed = FMath::Max(0.0f, speed - SlowDownRate / 2);
+	}
+	GetCharacterMovement()->MaxWalkSpeed = speed;
+	if (speed <= 0.0f)
+	{
+		ElapsedTime = 0;
+		GetCharacterMovement()->StopMovementImmediately();
+	}
+	else
+	{
+		AddMovementInput(LastInputDirection, 1.0f);
+		GetCharacterMovement()->Velocity = LastInputDirection * speed;
+	}
+	if (speed < 1.0f)
+	{
+		ElapsedTime = 0;
+		bStopMoving = false;
+	}
+	
+}
+
+void AHeroCharacter::OnStopMove()
+{
+	bStopMoving = true;
 }
 
 void AHeroCharacter::Look(const FInputActionValue& Value)
@@ -252,6 +339,10 @@ void AHeroCharacter::HeavyAttack()
 void AHeroCharacter::Sprint()
 {
 	if (CurrentState != EState::ES_Normal) { return; }
+
+	FVector Velocity = GetCharacterMovement()->Velocity;
+	float Speed = Velocity.Size();
+	if (Speed < 1.0f) { return; }
 
 	if (!bIsExhausted) 
 	{
@@ -530,6 +621,9 @@ void AHeroCharacter::BeginPlay()
 	{
 		BossRef->OnBossDied.AddUObject(this, &AHeroCharacter::DefeatedBoss);
 	}
+
+	HealthBarInsidePercent = HealthBarInside / MaxHealth;
+	StaminaBarInsidePercent = StaminaBarInside / MaxStamina;
 	
 }
 
@@ -546,6 +640,7 @@ void AHeroCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 
 		//Moving
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AHeroCharacter::Move);
+		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Completed, this, &AHeroCharacter::OnStopMove);
 
 		//Looking
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AHeroCharacter::Look);
@@ -611,20 +706,24 @@ void AHeroCharacter::Tick(float DeltaTime)
 		{
 			Stamina = MaxStamina;
 		}
+		StaminaBarInside = Stamina;
 		break;
 	case EState::ES_Sprint:
-		Tmp = Stamina - CostRate;
-		if (Tmp > 0)
+		if (GetCharacterMovement()->MaxWalkSpeed > 500.f)
 		{
-			Stamina = Tmp;
-		}
-		else
-		{
-			Stamina = 0;
-			bIsExhausted = true;
-			StopSprint();
-			SetState(EState::ES_Normal);
-		}
+			Tmp = Stamina - CostRate;
+			if (Tmp > 0)
+			{
+				Stamina = Tmp;
+			}
+			else
+			{
+				Stamina = 0;
+				bIsExhausted = true;
+				StopSprint();
+				SetState(EState::ES_Normal);
+			}
+		}	
 		break;
 	case EState::ES_Attack:
 		break;
@@ -637,6 +736,92 @@ void AHeroCharacter::Tick(float DeltaTime)
 	default:
 		break;
 	}
+
+	// StaminaBarInside chasing Stamina
+	const float deviation = 0.01f;
+	if (StaminaBarInside > Stamina + deviation)
+	{
+		float WaitTime = 1.0f;
+		if (CurrentState == EState::ES_Sprint)
+		{
+			WaitTime = 0;
+		}
+		if (CurrentState == EState::ES_Dodge)
+		{
+			WaitTime = 0.2f;
+		}
+		if (CurrentState == EState::ES_Damaged)
+		{
+			WaitTime = 0.1f;
+		}
+		if (StaminaBarInsideWait <= WaitTime)
+		{
+			StaminaBarInsideWait += DeltaTime;
+		}
+		else
+		{
+			Tmp = StaminaBarInside - CostRate;
+			if (Tmp > Stamina)
+			{
+				StaminaBarInside = Tmp;
+			}
+			else
+			{
+				StaminaBarInside = Stamina;
+			}
+		}
+		
+	}
+	else
+	{
+		StaminaBarInsideWait = 0;
+	}
+
+	if (StaminaBarInside < Stamina - deviation)
+	{
+		StaminaBarInside = Stamina;
+	}
+
+	StaminaBarInsidePercent = StaminaBarInside / MaxStamina;
+
+	if (HealthBarInside > Health + deviation)
+	{
+		float WaitTime = 1.0f;
+		if (HealthBarInsideWait <= WaitTime)
+		{
+			HealthBarInsideWait += DeltaTime;
+		}
+		else
+		{
+			Tmp = HealthBarInside - CostRate * 2;
+			if (Tmp > Health)
+			{
+				HealthBarInside = Tmp;
+			}
+			else
+			{
+				HealthBarInside = Health;
+			}
+		}
+
+	}
+	else
+	{
+		HealthBarInsideWait = 0;
+	}
+
+	if (HealthBarInside < Health - deviation)
+	{
+		HealthBarInside = Health;
+	}
+
+	HealthBarInsidePercent = HealthBarInside / MaxHealth;
+
+	if (bStopMoving)
+	{
+		StopMove();
+	}
+
 }
 
 void AHeroCharacter::TurnAttackTraceOn()

@@ -41,6 +41,8 @@ ADeathArmy::ADeathArmy()
 
 	Health = 50.f;
 	MaxHealth = 50.f;
+	HealthBarInside = MaxHealth;
+	HealthBarChangeRate = 50.f;
 	bIsDead = false;
 	bIsAttacking = false;
 	bTakingDamage = false;
@@ -54,12 +56,25 @@ ADeathArmy::ADeathArmy()
 
 void ADeathArmy::OnSelected()
 {
+	bIsOnSelected = true;
 	LockOnWidget->bHiddenInGame = false;
+	HealthBarWidgetComp->bHiddenInGame = false;
+	// if timer is active, clear it to stop HealthBar hidden again
+	if (GetWorldTimerManager().IsTimerActive(HealthBarVisionHandle))
+	{
+		GetWorldTimerManager().ClearTimer(HealthBarVisionHandle);
+	}
 }
 
 void ADeathArmy::OnDeselected()
 {
+	bIsOnSelected = false;
 	LockOnWidget->bHiddenInGame = true;
+	if (GetWorldTimerManager().IsTimerActive(HealthBarVisionHandle))
+	{
+		GetWorldTimerManager().ClearTimer(HealthBarVisionHandle);
+	}
+	GetWorldTimerManager().SetTimer(HealthBarVisionHandle, this, &ADeathArmy::HideBar, DeSelectedBarHiddenWait, false);
 }
 
 bool ADeathArmy::IsDead() const
@@ -69,28 +84,29 @@ bool ADeathArmy::IsDead() const
 
 float ADeathArmy::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
+	HealthBarWidgetComp->bHiddenInGame = false;
 	float Tmp = Health - DamageAmount;
 	if (Tmp > 0)
 	{
-		if (GetWorldTimerManager().IsTimerActive(HealthBarVisionHandle))
+		if (!bIsOnSelected)
 		{
-			GetWorldTimerManager().ClearTimer(HealthBarVisionHandle);
+			if (GetWorldTimerManager().IsTimerActive(HealthBarVisionHandle))
+			{
+				GetWorldTimerManager().ClearTimer(HealthBarVisionHandle);
+			}
+			GetWorldTimerManager().SetTimer(HealthBarVisionHandle, this, &ADeathArmy::HideBar, DamagedBarHiddenWait, false);
 		}
 		
-		GetWorldTimerManager().SetTimer(HealthBarVisionHandle, this, &ADeathArmy::HideBar, 5.f, false);
 		bTakingDamage = true;
 		Health = Tmp;
 
 		// Update HealthBar
-		float HealthPercent = Health / MaxHealth;
-		HealthBarWidgetComp->bHiddenInGame = false;
-		UHealthBarWidget* HealthBar = Cast<UHealthBarWidget>(HealthBarWidgetComp->GetUserWidgetObject());
+		float HealthPercent = Health / MaxHealth;		
 		if (HealthBar)
 		{
 			HealthBar->SetHealthPercent(HealthPercent);
 		}
 
-		UpdateHpBar();
 		PlayAnimMontage(HitAnimMontage);
 		GetCharacterMovement()->StopMovementImmediately();
 		AController* EnemyController = GetController();
@@ -106,8 +122,18 @@ float ADeathArmy::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent
 	}
 	else
 	{
-		HealthBarWidgetComp->bHiddenInGame = true;
 		Health = 0;
+		// Update HealthBar
+		float HealthPercent = Health / MaxHealth;
+		if (HealthBar)
+		{
+			HealthBar->SetHealthPercent(HealthPercent);
+		}
+		if (GetWorldTimerManager().IsTimerActive(HealthBarVisionHandle))
+		{
+			GetWorldTimerManager().ClearTimer(HealthBarVisionHandle);
+		}
+		GetWorldTimerManager().SetTimer(HealthBarVisionHandle, this, &ADeathArmy::HideBar, DeadBarHiddenWait, false);
 		bIsDead = true;
 		GetCapsuleComponent()->SetCollisionProfileName(TEXT("NoCollision"));
 		GetMesh()->SetCollisionProfileName(TEXT("NoCollision"));
@@ -220,28 +246,30 @@ void ADeathArmy::HideBar()
 
 void ADeathArmy::Stabbed(float DamageAmount)
 {
+	HealthBarWidgetComp->bHiddenInGame = false;
 	float Tmp = Health - DamageAmount;
 	if (Tmp > 0)
 	{
-		if (GetWorldTimerManager().IsTimerActive(HealthBarVisionHandle))
+		if (!bIsOnSelected)
 		{
-			GetWorldTimerManager().ClearTimer(HealthBarVisionHandle);
-		}
+			if (GetWorldTimerManager().IsTimerActive(HealthBarVisionHandle))
+			{
+				GetWorldTimerManager().ClearTimer(HealthBarVisionHandle);
+			}
 
-		GetWorldTimerManager().SetTimer(HealthBarVisionHandle, this, &ADeathArmy::HideBar, 5.f, false);
+			GetWorldTimerManager().SetTimer(HealthBarVisionHandle, this, &ADeathArmy::HideBar, DamagedBarHiddenWait, false);
+		}
+		
 		bTakingDamage = true;
 		Health = Tmp;
 
 		// Update HealthBar
-		float HealthPercent = Health / MaxHealth;
-		HealthBarWidgetComp->bHiddenInGame = false;
-		UHealthBarWidget* HealthBar = Cast<UHealthBarWidget>(HealthBarWidgetComp->GetUserWidgetObject());
+		float HealthPercent = Health / MaxHealth;	
 		if (HealthBar)
 		{
 			HealthBar->SetHealthPercent(HealthPercent);
 		}
 
-		UpdateHpBar();
 		float PlayTime = PlayAnimMontage(StabbedAnimMontage);
 		GetCapsuleComponent()->SetCollisionProfileName(TEXT("NoCollision"));
 		GetMesh()->SetCollisionProfileName(TEXT("NoCollision"));
@@ -259,9 +287,19 @@ void ADeathArmy::Stabbed(float DamageAmount)
 		}
 	}
 	else
-	{
-		HealthBarWidgetComp->bHiddenInGame = true;
+	{		
 		Health = 0;
+		// Update HealthBar
+		float HealthPercent = Health / MaxHealth;
+		if (HealthBar)
+		{
+			HealthBar->SetHealthPercent(HealthPercent);
+		}
+		if (GetWorldTimerManager().IsTimerActive(HealthBarVisionHandle))
+		{
+			GetWorldTimerManager().ClearTimer(HealthBarVisionHandle);
+		}
+		GetWorldTimerManager().SetTimer(HealthBarVisionHandle, this, &ADeathArmy::HideBar, DeadBarHiddenWait, false);
 		bIsDead = true;
 		GetCapsuleComponent()->SetCollisionProfileName(TEXT("NoCollision"));
 		GetMesh()->SetCollisionProfileName(TEXT("NoCollision"));
@@ -290,28 +328,30 @@ void ADeathArmy::Stabbed(float DamageAmount)
 
 void ADeathArmy::Executed(float DamageAmount)
 {
+	HealthBarWidgetComp->bHiddenInGame = false;
 	float Tmp = Health - DamageAmount;
 	if (Tmp > 0)
 	{
-		if (GetWorldTimerManager().IsTimerActive(HealthBarVisionHandle))
+		if (!bIsOnSelected)
 		{
-			GetWorldTimerManager().ClearTimer(HealthBarVisionHandle);
-		}
+			if (GetWorldTimerManager().IsTimerActive(HealthBarVisionHandle))
+			{
+				GetWorldTimerManager().ClearTimer(HealthBarVisionHandle);
+			}
 
-		GetWorldTimerManager().SetTimer(HealthBarVisionHandle, this, &ADeathArmy::HideBar, 5.f, false);
+			GetWorldTimerManager().SetTimer(HealthBarVisionHandle, this, &ADeathArmy::HideBar, DamagedBarHiddenWait, false);
+		}
+		
 		bTakingDamage = true;
 		Health = Tmp;
 
 		// Update HealthBar
-		float HealthPercent = Health / MaxHealth;
-		HealthBarWidgetComp->bHiddenInGame = false;
-		UHealthBarWidget* HealthBar = Cast<UHealthBarWidget>(HealthBarWidgetComp->GetUserWidgetObject());
+		float HealthPercent = Health / MaxHealth;	
 		if (HealthBar)
 		{
 			HealthBar->SetHealthPercent(HealthPercent);
 		}
 
-		UpdateHpBar();
 		float PlayTime = PlayAnimMontage(ExecutedAnimMontage);
 		GetCapsuleComponent()->SetCollisionProfileName(TEXT("NoCollision"));
 		GetMesh()->SetCollisionProfileName(TEXT("NoCollision"));
@@ -329,9 +369,19 @@ void ADeathArmy::Executed(float DamageAmount)
 		}
 	}
 	else
-	{
-		HealthBarWidgetComp->bHiddenInGame = true;
+	{	
 		Health = 0;
+		// Update HealthBar
+		float HealthPercent = Health / MaxHealth;
+		if (HealthBar)
+		{
+			HealthBar->SetHealthPercent(HealthPercent);
+		}
+		if (GetWorldTimerManager().IsTimerActive(HealthBarVisionHandle))
+		{
+			GetWorldTimerManager().ClearTimer(HealthBarVisionHandle);
+		}
+		GetWorldTimerManager().SetTimer(HealthBarVisionHandle, this, &ADeathArmy::HideBar, DeadBarHiddenWait, false);
 		bIsDead = true;
 		GetCapsuleComponent()->SetCollisionProfileName(TEXT("NoCollision"));
 		GetMesh()->SetCollisionProfileName(TEXT("NoCollision"));
@@ -391,10 +441,12 @@ void ADeathArmy::BeginPlay()
 
 	// Initial Health Bar
 	float HealthPercent = Health / MaxHealth;
-	UHealthBarWidget* HealthBar = Cast<UHealthBarWidget>(HealthBarWidgetComp->GetUserWidgetObject());
+	float InsidePercenet = HealthBarInside / MaxHealth;
+	HealthBar = Cast<UHealthBarWidget>(HealthBarWidgetComp->GetUserWidgetObject());
 	if (HealthBar)
 	{
 		HealthBar->SetHealthPercent(HealthPercent);
+		HealthBar->SetInsidePercent(InsidePercenet);
 	}
 
 #if 0
@@ -476,6 +528,42 @@ void ADeathArmy::ResetCollision()
 void ADeathArmy::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	// HealthBarInside chasing Health
+	float ChaseRate = HealthBarChangeRate * DeltaTime;
+	float Tmp = 0;
+	const float deviation = 0.01f;
+	if (HealthBarInside > Health + deviation)
+	{
+		float WaitTime = 1.0f;
+		if (HealthBarInsideWait <= WaitTime)
+		{
+			HealthBarInsideWait += DeltaTime;
+		}
+		else
+		{
+			Tmp = HealthBarInside - ChaseRate;
+			if (Tmp > Health)
+			{
+				HealthBarInside = Tmp;
+			}
+			else
+			{
+				HealthBarInside = Health;
+			}
+		}
+
+	}
+	else
+	{
+		HealthBarInsideWait = 0;
+	}
+
+	float InsidePercenet = HealthBarInside / MaxHealth;
+	if (HealthBar)
+	{
+		HealthBar->SetInsidePercent(InsidePercenet);
+	}
 
 }
 

@@ -21,8 +21,17 @@ public:
         HealthPercent = Percent;
     }
 
+    UFUNCTION(BlueprintCallable, Category = "Health")
+    void SetInsidePercent(float Percent)
+    {
+        InsidePercent = Percent;
+    }
+
 protected:
     UPROPERTY(BlueprintReadOnly, Category = "Health")
     float HealthPercent;
+
+    UPROPERTY(BlueprintReadOnly, Category = "Health")
+    float InsidePercent;
 	
 };
