@@ -56,18 +56,25 @@ ADeathArmy::ADeathArmy()
 
 void ADeathArmy::OnSelected()
 {
+	bIsOnSelected = true;
 	LockOnWidget->bHiddenInGame = false;
 	HealthBarWidgetComp->bHiddenInGame = false;
+	// if timer is active, clear it to stop HealthBar hidden again
 	if (GetWorldTimerManager().IsTimerActive(HealthBarVisionHandle))
 	{
 		GetWorldTimerManager().ClearTimer(HealthBarVisionHandle);
 	}
-	GetWorldTimerManager().SetTimer(HealthBarVisionHandle, this, &ADeathArmy::HideBar, DamagedBarHiddenWait, false);
 }
 
 void ADeathArmy::OnDeselected()
 {
+	bIsOnSelected = false;
 	LockOnWidget->bHiddenInGame = true;
+	if (GetWorldTimerManager().IsTimerActive(HealthBarVisionHandle))
+	{
+		GetWorldTimerManager().ClearTimer(HealthBarVisionHandle);
+	}
+	GetWorldTimerManager().SetTimer(HealthBarVisionHandle, this, &ADeathArmy::HideBar, DeSelectedBarHiddenWait, false);
 }
 
 bool ADeathArmy::IsDead() const
@@ -81,11 +88,15 @@ float ADeathArmy::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent
 	float Tmp = Health - DamageAmount;
 	if (Tmp > 0)
 	{
-		if (GetWorldTimerManager().IsTimerActive(HealthBarVisionHandle))
+		if (!bIsOnSelected)
 		{
-			GetWorldTimerManager().ClearTimer(HealthBarVisionHandle);
-		}		
-		GetWorldTimerManager().SetTimer(HealthBarVisionHandle, this, &ADeathArmy::HideBar, DamagedBarHiddenWait, false);
+			if (GetWorldTimerManager().IsTimerActive(HealthBarVisionHandle))
+			{
+				GetWorldTimerManager().ClearTimer(HealthBarVisionHandle);
+			}
+			GetWorldTimerManager().SetTimer(HealthBarVisionHandle, this, &ADeathArmy::HideBar, DamagedBarHiddenWait, false);
+		}
+		
 		bTakingDamage = true;
 		Health = Tmp;
 
@@ -239,12 +250,16 @@ void ADeathArmy::Stabbed(float DamageAmount)
 	float Tmp = Health - DamageAmount;
 	if (Tmp > 0)
 	{
-		if (GetWorldTimerManager().IsTimerActive(HealthBarVisionHandle))
+		if (!bIsOnSelected)
 		{
-			GetWorldTimerManager().ClearTimer(HealthBarVisionHandle);
-		}
+			if (GetWorldTimerManager().IsTimerActive(HealthBarVisionHandle))
+			{
+				GetWorldTimerManager().ClearTimer(HealthBarVisionHandle);
+			}
 
-		GetWorldTimerManager().SetTimer(HealthBarVisionHandle, this, &ADeathArmy::HideBar, DamagedBarHiddenWait, false);
+			GetWorldTimerManager().SetTimer(HealthBarVisionHandle, this, &ADeathArmy::HideBar, DamagedBarHiddenWait, false);
+		}
+		
 		bTakingDamage = true;
 		Health = Tmp;
 
@@ -317,12 +332,16 @@ void ADeathArmy::Executed(float DamageAmount)
 	float Tmp = Health - DamageAmount;
 	if (Tmp > 0)
 	{
-		if (GetWorldTimerManager().IsTimerActive(HealthBarVisionHandle))
+		if (!bIsOnSelected)
 		{
-			GetWorldTimerManager().ClearTimer(HealthBarVisionHandle);
-		}
+			if (GetWorldTimerManager().IsTimerActive(HealthBarVisionHandle))
+			{
+				GetWorldTimerManager().ClearTimer(HealthBarVisionHandle);
+			}
 
-		GetWorldTimerManager().SetTimer(HealthBarVisionHandle, this, &ADeathArmy::HideBar, DamagedBarHiddenWait, false);
+			GetWorldTimerManager().SetTimer(HealthBarVisionHandle, this, &ADeathArmy::HideBar, DamagedBarHiddenWait, false);
+		}
+		
 		bTakingDamage = true;
 		Health = Tmp;
 

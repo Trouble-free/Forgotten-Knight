@@ -30,6 +30,10 @@ class MELEECOMBAT_API ADeathArmy : public ACharacter, public ILockOnInterface, p
 
 	float DeadBarHiddenWait = 3.0f;
 
+	float DeSelectedBarHiddenWait = 1.0f;
+
+	bool bIsOnSelected;
+
 	class UHealthBarWidget* HealthBar;
 
 	class AHeroCharacter* PlayerRef;
