@@ -47,6 +47,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound")
 	USoundBase* BlockSound;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound")
+	USoundBase* LastHitSound;
+
 	//Hit Stop
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hit Stop")
 	float DilationRate = 0.01f;

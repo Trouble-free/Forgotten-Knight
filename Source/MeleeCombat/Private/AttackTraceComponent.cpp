@@ -109,10 +109,12 @@ void UAttackTraceComponent::TickComponent(float DeltaTime, ELevelTick TickType, 
 					if (Enemy->Health <= Damage)
 					{
 						SetHitStop(DilationTime * 10);
+						UGameplayStatics::PlaySound2D(this, LastHitSound);
 					}
 					else
 					{
 						SetHitStop(DilationTime);
+						UGameplayStatics::PlaySound2D(this, ImpactSound);
 					}
 				}
 				else if (ABoss* const Boss = Cast<ABoss>(OutActor))
@@ -120,10 +122,12 @@ void UAttackTraceComponent::TickComponent(float DeltaTime, ELevelTick TickType, 
 					if (Boss->Health <= Damage)
 					{
 						SetHitStop(DilationTime * 20);
+						UGameplayStatics::PlaySound2D(this, LastHitSound);
 					}
 					else
 					{
 						SetHitStop(DilationTime);
+						UGameplayStatics::PlaySound2D(this, ImpactSound);
 					}
 				}
 				else
@@ -143,15 +147,18 @@ void UAttackTraceComponent::TickComponent(float DeltaTime, ELevelTick TickType, 
 					else
 					{
 						//GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, TEXT("Hitted"));
-						UGameplayStatics::PlaySound2D(this, ImpactSound);
-						UGameplayStatics::SpawnEmitterAtLocation(this, BloodParticle, OutHit.Location, ParticleRot);
+						if (HeroRef->Health <= Damage)
+						{
+							UGameplayStatics::PlaySound2D(this, LastHitSound);
+						}
+						else
+						{
+							UGameplayStatics::PlaySound2D(this, ImpactSound);
+						}
+						
 					}
 				}
-				else
-				{
-					UGameplayStatics::PlaySound2D(this, ImpactSound);
-					UGameplayStatics::SpawnEmitterAtLocation(this, BloodParticle, OutHit.Location, ParticleRot);
-				}
+				UGameplayStatics::SpawnEmitterAtLocation(this, BloodParticle, OutHit.Location, ParticleRot);
 
 				UGameplayStatics::ApplyDamage(
 					OutActor,
