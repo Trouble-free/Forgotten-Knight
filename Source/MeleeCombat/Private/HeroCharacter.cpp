@@ -21,6 +21,7 @@
 #include "Perception/AISense_Sight.h"
 #include "Enemy.h"
 #include "Boss.h"
+#include "Kismet/GameplayStatics.h"
 
 void AHeroCharacter::SetupStimulusSource()
 {
@@ -77,6 +78,7 @@ AHeroCharacter::AHeroCharacter()
 	Health = 100.f;
 	MaxHealth = 100.f;
 	HealthBarInside = 100.f;
+	HealthBarChangeRate = 50.f;
 	Stamina = 100.f;
 	MaxStamina = 100.f;
 	StaminaBarInside = 100.f;
@@ -102,6 +104,10 @@ void AHeroCharacter::OnJump()
 	if (CurrentState != EState::ES_Normal && CurrentState != EState::ES_Sprint) { return; }
 	if (bCanJump)
 	{
+		if (GetCharacterMovement()->IsMovingOnGround())
+		{
+			UGameplayStatics::PlaySound2D(this, JumpSound);
+		}	
 		Jump();
 	}
 }
@@ -571,6 +577,7 @@ float AHeroCharacter::TakeDamage(float DamageAmount, FDamageEvent const& DamageE
 	}
 	else
 	{
+		UGameplayStatics::PlaySound2D(this, DeathSound);
 		Health = 0;
 		bIsDead = true;
 		bCanJump = false;
@@ -635,7 +642,7 @@ void AHeroCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 	if (UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(PlayerInputComponent))
 	{
 		//Jumping
-		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &AHeroCharacter::OnJump);
+		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &AHeroCharacter::OnJump);
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
 
 		//Moving
@@ -784,6 +791,8 @@ void AHeroCharacter::Tick(float DeltaTime)
 
 	StaminaBarInsidePercent = StaminaBarInside / MaxStamina;
 
+	// HealthBarInside chasing Health
+	float ChaseRate = HealthBarChangeRate * DeltaTime;
 	if (HealthBarInside > Health + deviation)
 	{
 		float WaitTime = 1.0f;
@@ -793,7 +802,7 @@ void AHeroCharacter::Tick(float DeltaTime)
 		}
 		else
 		{
-			Tmp = HealthBarInside - CostRate * 2;
+			Tmp = HealthBarInside - ChaseRate;
 			if (Tmp > Health)
 			{
 				HealthBarInside = Tmp;

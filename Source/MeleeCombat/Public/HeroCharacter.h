@@ -174,6 +174,9 @@ public:
 	float HealthBarInsidePercent;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attribute")
+	float HealthBarChangeRate;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attribute")
 	float Stamina;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attribute")
@@ -184,9 +187,6 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Attribute")
 	float StaminaBarInsidePercent;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Attribute")
-	float LastStaminaBarInsidePercent;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attribute")
 	float StaminaRecoverRate;
@@ -202,6 +202,12 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attribute")
 	bool bIsDead;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound")
+	USoundBase* JumpSound;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound")
+	USoundBase* DeathSound;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	bool bBlocking;
